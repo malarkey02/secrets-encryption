@@ -6,7 +6,12 @@ const ejs = require('ejs');
 const mongoose = require('mongoose');
 
 var encrypt = require('mongoose-encryption');
+//using hashing 
 
+const bcrypt = require('bcrypt');
+const saltRounds = 10;
+// const myPlaintextPassword = 's0/\/\P4$$w0rD';
+// const someOtherPlaintextPassword = 'not_bacon';
 
 
 const app = express();
@@ -45,40 +50,63 @@ app.get("/login", function(req, res){
 
 app.post("/register", function(req, res){
 
-    const newUser = new User({
-        email: req.body.username,
-        password: req.body.password
+    myPlaintextPassword = req.body.password;
+
+
+    bcrypt.genSalt(saltRounds, function(err, salt) {
+        bcrypt.hash(myPlaintextPassword, salt, function(err, hash) {
+            // Store hash in your password DB.
+                if(err){
+                    console.log("Error while hashing registration")
+                }
+                //COME BACK to insert the logic for if a user is registered 
+                const newUser = new User({
+                    email: req.body.username,
+                    password: hash
+                });
+
+            newUser.save(function(err){
+                if(!err){
+                    res.render("secrets");
+                } else {
+                    console.log(err);
+                }
+
+            });
+        });
     });
 
-    //COME BACK to insert the logic for if a user is registered 
+ 
 
-    newUser.save(function(err){
-        if(!err){
-            res.render("secrets");
-        } else {
-            console.log(err);
-        }
 
-    });
 
 });
 
 app.post("/login", function(req, res){
 
     const username = req.body.username;
-    const password = req.body.password;
+    const myPlaintextPassword = req.body.password;
 
     User.findOne({email: username}, function(err, doc){
         if(err){
             console.log(err);
         } else {
-            console.log("It's getting in here");
-            console.log(doc);
-            if(doc){
-                res.render('secrets');
-            } else {
-                res.send("Couldn't find user. Did you mean to register?");
-            }
+
+            // Insert logic for checking password
+            
+            bcrypt.compare(myPlaintextPassword, doc.password, function(err, result) {
+                if(result){
+                   
+                    res.render('secrets');
+                } else {
+                    res.send("Couldn't find user. Did you mean to register?");
+                }
+            });
+
+            
+            
+                
+            
         }
     });
 })
